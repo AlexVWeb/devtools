@@ -1,17 +1,23 @@
 'use client';
-import React, {useState} from "react";
+import React, { useEffect, useState } from "react";
 
 type TransformType = 'fix' | 'issue' | 'bug' | 'feat';
 const JiraToGit = () => {
     const [numberTicket, setNumberTicket] = useState<string>('');
     const [title, setTitle] = useState<string>('');
     const [type, setType] = useState<TransformType>('fix');
-    const [prefix, setPrefix] = useState<string>(localStorage.getItem('prefix') || 'JIR');
-
+    const [prefix, setPrefix] = useState<string>('JIR');
     const [commit, setCommit] = useState<string>('');
     const [branch, setBranch] = useState<string>('');
     const [copied, setCopied] = React.useState({ commit: false, branch: false });
     const [isLoading, setIsLoading] = React.useState(false);
+
+    useEffect(() => {
+        const savedPrefix = localStorage.getItem('prefix');
+        if (savedPrefix) {
+            setPrefix(savedPrefix);
+        }
+    }, []);
 
     const promptAi = {
         model: "gpt-3.5-turbo",
@@ -84,7 +90,7 @@ const JiraToGit = () => {
         setTimeout(() => setCopied(prev => ({ ...prev, [type]: false })), 2000);
     };
 
-    const handleGenerateClick = async (e) => {
+    const handleGenerateClick = async (e: React.FormEvent<Element>) => {
         e.preventDefault();
         setIsLoading(true);
         await handleSubmit(e);
@@ -145,7 +151,7 @@ const JiraToGit = () => {
                             </label>
                             <select
                                 className="w-full px-4 py-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 transition-all"
-                                onChange={(e) => setType(e.target.value)}
+                                onChange={(e) => setType(e.target.value as TransformType)}
                             >
                                 <option value="fix">🔧 Fix</option>
                                 <option value="issue">⚠️ Issue</option>
