@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useState } from "react";
+import toast from 'react-hot-toast';
 
 type TransformType = 'fix' | 'issue' | 'bug' | 'feat';
 const JiraToGit = () => {
@@ -46,15 +47,23 @@ const JiraToGit = () => {
     }
 
     const fetchAi = async () => {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer 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`
-            },
-            body: JSON.stringify(promptAi)
-        });
-        return await response.json();
+        try {
+            if (!process.env.REACT_APP_OPENAI_API_KEY) {
+                throw new Error('OpenAI API key is missing');
+            }
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${process.env.REACT_APP_OPENAI_API_KEY}`
+                },
+                body: JSON.stringify(promptAi)
+            });
+            return await response.json();
+        } catch (error) {
+            toast.error('Une erreur est survenue lors de la génération du commit');
+            console.error(error);
+        }
     }
 
     const generate = async () => {
