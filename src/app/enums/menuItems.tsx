@@ -4,6 +4,8 @@ import JiraToGit from "@/app/components/features/JiraToGit";
 import UrlTransformer from "@/app/components/features/UrlTransformer";
 import TextTransform from "@/app/components/features/TextTransform";
 import ReportFormatter from "@/app/components/features/ReportFormatter";
+import URSSAFCalculator from "@/app/components/features/UrssafCalculator";
+import SiretGenerator from "@/app/components/features/SiretGenerator";
 
 export interface MenuItem {
     name: string;
@@ -26,7 +28,9 @@ export const menuItems: MenuItems = {
             {name: 'Jira to Git', description: 'Convert Jira tickets to Git branches', component: <JiraToGit/>, new: true},
             {name: 'PR Template', description: 'Generate pull request templates'},
             {name: 'Commit Message', description: 'Format commit messages'},
-            {name: 'Scrum Helper', description: 'Tools for agile ceremonies'}
+            {name: 'Scrum Helper', description: 'Tools for agile ceremonies'},
+            {name: 'URSSAF Calculateur', description: 'Calculateur URSSAF', component: <URSSAFCalculator/>, new: true},
+            {name: 'Siret Générateur', description: 'Siret Générateur', component: <SiretGenerator/>, new: true}
         ]
     },
     'Code Tools': {

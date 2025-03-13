@@ -23,19 +23,20 @@ const ReportFormatter = () => {
                 2. Structurant le texte selon les 3 sections standard
                 3. Conservant l'essentiel du contenu original
                 4. Améliorant légèrement la clarté sans ajouter d'informations non mentionnées
+                5. Utilisant un langage professionnel et formel adapté à un compte rendu de mentorat
 
                 Format à suivre :
-                **1. Avancées de l'étudiant sur son projet depuis la dernière session**
+                1. Avancées de l'étudiant sur son projet depuis la dernière session
                 - Reprendre uniquement les faits accomplis et les progrès réalisés depuis la dernière session
                 - Utiliser des puces (*) si plusieurs points
                 - Ne pas inclure les tâches à faire ici
 
-                **2. Principaux sujets abordés pendant la session, obstacles à surmonter (le cas échéant)**
+                2. Principaux sujets abordés pendant la session, obstacles à surmonter (le cas échéant)
                 - Lister uniquement les sujets qui ont été discutés pendant la session
                 - Mentionner les obstacles ou problèmes identifiés
                 - Ne pas inclure les actions à faire ou les objectifs futurs ici
 
-                **3. Objectifs 'SMART' fixés par l'étudiant et le mentor pour la prochaine session**
+                3. Objectifs 'SMART' fixés par l'étudiant et le mentor pour la prochaine session
                 - Inclure TOUTES les actions "à faire" mentionnées dans le texte
                 - Transformer chaque action en objectif SMART (Spécifique, Mesurable, Atteignable, Réaliste, Temporel)
                 - Inclure TOUS les éléments listés après "à faire :", "todo :", "actions :", etc.

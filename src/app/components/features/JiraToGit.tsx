@@ -7,7 +7,7 @@ const JiraToGit = () => {
     const [numberTicket, setNumberTicket] = useState<string>('');
     const [title, setTitle] = useState<string>('');
     const [type, setType] = useState<TransformType>('fix');
-    const [prefix, setPrefix] = useState<string>('JIR');
+    const [prefix, setPrefix] = useState<string>('');
     const [commit, setCommit] = useState<string>('');
     const [branch, setBranch] = useState<string>('');
     const [copied, setCopied] = React.useState({ commit: false, branch: false });
@@ -21,25 +21,81 @@ const JiraToGit = () => {
     }, []);
 
     const promptAi = {
-        model: "gpt-3.5-turbo",
+        model: "gpt-4o",
         messages: [
             {
-                role: "system",
-                content: "Vous êtes un générateur de commit."
+                "role": "system",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "You are a helpful assistant that generates commit messages and branch names in a consistent JSON format."
+                    }
+                ]
             },
             {
-                role: "user",
-                content: `
-                    Generate a corresponding commit and branch name according to the information in the following ticket:\n
-                    Ticket Title: ${title}\n
-                    Expected Commit Format: ${prefix}-${numberTicket}: {create a short English description of the title}\n
-                    Expected Branch Format: ${type}/${prefix}-${numberTicket}_{lowercase description with underscores in English}\n
-                    Ton retour doit être :\n
-                    commit:{commit};branch:{branch}
-                `
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": `Return only a JSON object with "branch" and "commit" properties using these formats:
+                        - branch: ${type}/${prefix}-${numberTicket}_{lowercase description with underscores in English}
+                        - commit: ${type}(#${prefix}-${numberTicket}): {create a short English description of the title}`
+                    }
+                ]
             },
-        ]
-    }
+        ],
+        response_format: {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "ticket_commit_info",
+                "strict": true,
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "title": {
+                            "type": "string",
+                            "description": "The title of the ticket."
+                        },
+                        "prefix": {
+                            "type": "string",
+                            "description": "The prefix associated with the ticket."
+                        },
+                        "numberTicket": {
+                            "type": "string",
+                            "description": "The unique number of the ticket."
+                        },
+                        "type": {
+                            "type": "string",
+                            "description": "The type of the ticket."
+                        },
+                        "branch": {
+                            "type": "string",
+                            "description": "The branch name formatted as ${type}/${prefix}-${numberTicket}_{lowercase description with underscores in English}."
+                        },
+                        "commit": {
+                            "type": "string",
+                            "description": "The commit message formatted as ${type}(#${prefix}-${numberTicket}): {create a short English description of the title}."
+                        }
+                    },
+                    "required": [
+                        "title",
+                        "prefix",
+                        "numberTicket",
+                        "type",
+                        "branch",
+                        "commit"
+                    ],
+                    "additionalProperties": false
+                }
+            }
+        },
+        temperature: 1,
+        max_completion_tokens: 2048,
+        top_p: 1,
+        frequency_penalty: 0,
+        presence_penalty: 0
+    };
+
 
     const updatePrefix = (prefix: string) => {
         localStorage.setItem('prefix', prefix);
