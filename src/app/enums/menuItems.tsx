@@ -9,6 +9,8 @@ import SiretGenerator from "@/app/components/features/SiretGenerator";
 import Base64 from "@/app/components/features/Base64";
 import JWTDecoder from "@/app/components/features/JWTDecoder";
 import ColorConverter from "@/app/components/features/ColorConverter";
+import CronGenerator from "@/app/components/features/CronGenerator";
+
 export interface MenuItem {
     name: string;
     description: string;
@@ -67,7 +69,7 @@ export const menuItems: MenuItems = {
         items: [
             {name: 'SQL Formatter', description: 'Format SQL queries'},
             {name: 'API Tester', description: 'Test API endpoints'},
-            {name: 'Cron Generator', description: 'Generate cron expressions'},
+            {name: 'Cron Generator', description: 'Generate cron expressions', component: <CronGenerator/>, new: true},
             {name: 'Hash Generator', description: 'Generate secure hashes'}
         ]
     },
