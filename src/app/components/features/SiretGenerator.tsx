@@ -116,7 +116,7 @@ const SiretGenerator = () => {
                     {/* Info Card */}
                     <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                         <div className="text-sm text-blue-800 dark:text-blue-200">
-                            <span className="font-medium">Note :</span> Ces SIRET sont générés de manière aléatoire et sont mathématiquement valides selon l'algorithme de Luhn. Ils sont parfaits pour les tests mais ne correspondent à aucune entreprise réelle.
+                            <span className="font-medium">Note :</span> {"Ces SIRET sont générés de manière aléatoire et sont mathématiquement valides selon l'algorithm de Luhn. Ils sont parfaits pour les tests mais ne correspondent à aucune entreprise réelle."}
                         </div>
                     </div>
                 </div>

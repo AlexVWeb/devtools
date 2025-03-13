@@ -18,18 +18,60 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+type EntryUrssaf = {
+    id: number;
+    date: Date;
+    quarter: number;
+    revenue: number;
+    urssafAmount: number;
+    impotAmount: number;
+    formationAmount: number;
+    totalAmount: number;
+}
+
 const URSSAFCalculator = () => {
     const [revenue, setRevenue] = useState('');
-    const [history, setHistory] = useState([]);
-    const [includeImpot, setIncludeImpot] = useState(true);
-    const [entryToDelete, setEntryToDelete] = useState(null);
+    const [history, setHistory] = useState<EntryUrssaf[]>(() => {
+        if (typeof window !== 'undefined') {
+            const savedHistory = localStorage.getItem('urssafHistory');
+            if (savedHistory) {
+                return JSON.parse(savedHistory).map((entry: any) => ({
+                    ...entry,
+                    date: new Date(entry.date)
+                }));
+            }
+        }
+        return [];
+    });
+    const [includeImpot, setIncludeImpot] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const savedImpot = localStorage.getItem('urssafIncludeImpot');
+            return savedImpot ? JSON.parse(savedImpot) : true;
+        }
+        return true;
+    });
+    const [entryToDelete, setEntryToDelete] = useState<EntryUrssaf | null>(null);
     const [showSuccess, setShowSuccess] = useState(false);
 
     const URSSAF_RATE = 0.231;
     const IMPOT_RATE = 0.022;
     const FORMATION_RATE = 0.002;
 
-    const getQuarter = (date) => {
+    // Sauvegarder l'historique dans le localStorage
+    React.useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('urssafHistory', JSON.stringify(history));
+        }
+    }, [history]);
+
+    // Sauvegarder l'option d'impôt dans le localStorage
+    React.useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('urssafIncludeImpot', JSON.stringify(includeImpot));
+        }
+    }, [includeImpot]);
+
+    const getQuarter = (date: Date) => {
         const month = date.getMonth();
         if (month < 3) return 1;
         if (month < 6) return 2;
@@ -66,7 +108,7 @@ const URSSAFCalculator = () => {
         const formationAmount = revenueNum * FORMATION_RATE;
         const totalAmount = urssafAmount + impotAmount + formationAmount;
 
-        const newEntry = {
+        const newEntry: EntryUrssaf = {
             id: Date.now(),
             date: new Date(),
             quarter: getCurrentQuarter(),
@@ -83,62 +125,67 @@ const URSSAFCalculator = () => {
         setTimeout(() => setShowSuccess(false), 3000);
     };
 
-    const deleteEntry = (id) => {
+    const deleteEntry = (id: number) => {
         setHistory(history.filter(entry => entry.id !== id));
         setEntryToDelete(null);
     };
 
-    const handleDeleteClick = (entry) => {
+    const handleDeleteClick = (entry: EntryUrssaf) => {
         setEntryToDelete(entry);
     };
 
-    const getQuarterSummary = (quarter) => {
-        const quarterEntries = history.filter(entry => entry.quarter === quarter);
+    const getQuarterSummary = (quarter: number) => {
+        const summary = history.filter(entry => entry.quarter === quarter);
         return {
-            totalRevenue: quarterEntries.reduce((sum, entry) => sum + entry.revenue, 0),
-            totalUrssaf: quarterEntries.reduce((sum, entry) => sum + entry.urssafAmount, 0),
-            totalImpot: quarterEntries.reduce((sum, entry) => sum + entry.impotAmount, 0),
-            totalFormation: quarterEntries.reduce((sum, entry) => sum + entry.formationAmount, 0),
-            totalAmount: quarterEntries.reduce((sum, entry) => sum + entry.totalAmount, 0),
-            entries: quarterEntries
+            totalRevenue: summary.reduce((sum, entry: EntryUrssaf) => sum + entry.revenue, 0),
+            totalUrssaf: summary.reduce((sum, entry: EntryUrssaf) => sum + entry.urssafAmount, 0),
+            totalImpot: summary.reduce((sum, entry: EntryUrssaf) => sum + entry.impotAmount, 0),
+            totalFormation: summary.reduce((sum, entry: EntryUrssaf) => sum + entry.formationAmount, 0),
+            totalAmount: summary.reduce((sum, entry: EntryUrssaf) => sum + entry.totalAmount, 0),
+            entries: summary
         };
     };
 
-    const QuarterSummary = ({ quarter }) => {
+    const QuarterSummary = ({ quarter }: { quarter: number }) => {
         const summary = getQuarterSummary(quarter);
         if (summary.entries.length === 0) return null;
 
         return (
-            <Card className="mt-4 border-l-4 border-l-blue-500">
+            <Card className="mt-4 border-l-4 border-l-blue-500 dark:bg-gray-800 dark:border-l-blue-400">
                 <CardContent className="pt-4">
                     <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-lg font-semibold text-blue-700">
+                        <div className="flex items-center gap-2 text-lg font-semibold text-blue-700 dark:text-blue-400">
                             <Calendar className="h-5 w-5" />
                             <span>Trimestre {quarter}</span>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                        <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                             <div>
-                                <div className="text-sm text-gray-500">Chiffre d'affaires</div>
-                                <div className="text-lg font-medium">{summary.totalRevenue.toLocaleString()}€</div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400">{"Chiffre d'affaires"}</div>
+                                <div className="text-lg font-medium dark:text-gray-200">{summary.totalRevenue.toLocaleString()}€</div>
                             </div>
                             <div>
-                                <div className="text-sm text-gray-500">URSSAF (23.1%)</div>
-                                <div className="text-lg font-medium">{summary.totalUrssaf.toLocaleString()}€</div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400">URSSAF (23.1%)</div>
+                                <div className="text-lg font-medium dark:text-gray-200">{summary.totalUrssaf.toLocaleString()}€</div>
                             </div>
                             {summary.totalImpot > 0 && (
                                 <div>
-                                    <div className="text-sm text-gray-500">Impôt (2.2%)</div>
-                                    <div className="text-lg font-medium">{summary.totalImpot.toLocaleString()}€</div>
+                                    <div className="text-sm text-gray-500 dark:text-gray-400">Impôt (2.2%)</div>
+                                    <div className="text-lg font-medium dark:text-gray-200">{summary.totalImpot.toLocaleString()}€</div>
                                 </div>
                             )}
                             <div>
-                                <div className="text-sm text-gray-500">Formation (0.2%)</div>
-                                <div className="text-lg font-medium">{summary.totalFormation.toLocaleString()}€</div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400">Formation (0.2%)</div>
+                                <div className="text-lg font-medium dark:text-gray-200">{summary.totalFormation.toLocaleString()}€</div>
                             </div>
                         </div>
-                        <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                            <span className="font-medium text-blue-700">Total à payer</span>
-                            <span className="text-xl font-bold text-blue-700">{summary.totalAmount.toLocaleString()}€</span>
+                        <div className="flex justify-between items-center p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                            <div className="space-y-1">
+                                <span className="font-medium text-blue-700 dark:text-blue-400">Total à payer</span>
+                                <div className="text-sm text-blue-600 dark:text-blue-300">
+                                    {(summary.totalRevenue - summary.totalAmount).toLocaleString()}€ restants
+                                </div>
+                            </div>
+                            <span className="text-xl font-bold text-blue-700 dark:text-blue-400">{summary.totalAmount.toLocaleString()}€</span>
                         </div>
                     </div>
                 </CardContent>
@@ -147,7 +194,7 @@ const URSSAFCalculator = () => {
     };
 
     const nextDeadline = getNextDeadline();
-    const daysUntilDeadline = Math.ceil((nextDeadline - new Date()) / (1000 * 60 * 60 * 24));
+    const daysUntilDeadline = Math.ceil((nextDeadline.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
 
     return (
         <div className="max-w-xl mx-auto p-4">
@@ -172,7 +219,7 @@ const URSSAFCalculator = () => {
                 </AlertDialogContent>
             </AlertDialog>
 
-            <Card className="border-none shadow-lg">
+            <Card className="border-none shadow-lg dark:bg-gray-800">
                 <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
                     <div className="flex items-center gap-2">
                         <Calculator className="h-6 w-6" />
@@ -180,51 +227,51 @@ const URSSAFCalculator = () => {
                     </div>
                 </CardHeader>
                 <CardContent className="pt-6">
-                    <Alert className={`mb-6 ${daysUntilDeadline <= 7 ? 'border-red-500 bg-red-50' : 'border-blue-200'}`}>
-                        <AlertCircle className={`h-4 w-4 ${daysUntilDeadline <= 7 ? 'text-red-500' : 'text-blue-500'}`} />
+                    <Alert className={`mb-6 ${daysUntilDeadline <= 7 ? 'border-red-500 bg-red-50 dark:bg-red-950 dark:border-red-800' : 'border-blue-200 dark:bg-blue-950 dark:border-blue-800'}`}>
+                        <AlertCircle className={`h-4 w-4 ${daysUntilDeadline <= 7 ? 'text-red-500 dark:text-red-400' : 'text-blue-500 dark:text-blue-400'}`} />
                         <AlertTitle className="flex items-center gap-2">
                             Prochaine échéance
                         </AlertTitle>
                         <AlertDescription className="flex justify-between items-center">
                             <span>{nextDeadline.toLocaleDateString()}</span>
-                            <span className={`text-sm font-medium ${daysUntilDeadline <= 7 ? 'text-red-500' : 'text-blue-500'}`}>
-                {daysUntilDeadline} jours restants
-              </span>
+                            <span className={`text-sm font-medium ${daysUntilDeadline <= 7 ? 'text-red-500 dark:text-red-400' : 'text-blue-500 dark:text-blue-400'}`}>
+                                {daysUntilDeadline} jours restants
+                            </span>
                         </AlertDescription>
                     </Alert>
 
                     <div className="space-y-6">
-                        <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                             <Switch
                                 id="impot"
                                 checked={includeImpot}
                                 onCheckedChange={setIncludeImpot}
                             />
-                            <Label htmlFor="impot" className="text-sm font-medium">
-                                Inclure le versement libératoire d'impôt (2.2%)
+                            <Label htmlFor="impot" className="text-sm font-medium dark:text-gray-200">
+                                {"Inclure le versement libératoire d'impôt (2.2%)"}
                             </Label>
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="revenue" className="text-sm font-medium">
+                            <Label htmlFor="revenue" className="text-sm font-medium dark:text-gray-200">
                                 Revenu (€)
                             </Label>
                             <div className="relative">
-                                <Euro className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                                <Euro className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
                                 <Input
                                     id="revenue"
                                     type="number"
                                     value={revenue}
                                     onChange={(e) => setRevenue(e.target.value)}
                                     placeholder="Entrez votre revenu"
-                                    className="pl-10"
+                                    className="pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
                                 />
                             </div>
                         </div>
 
                         <Button
                             onClick={calculateURSSAF}
-                            className="w-full bg-blue-600 hover:bg-blue-700"
+                            className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
                             disabled={!revenue}
                         >
                             <Calculator className="h-4 w-4 mr-2" />
@@ -232,8 +279,8 @@ const URSSAFCalculator = () => {
                         </Button>
 
                         {showSuccess && (
-                            <Alert className="bg-green-50 border-green-200">
-                                <AlertDescription className="text-green-600">
+                            <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                                <AlertDescription className="text-green-600 dark:text-green-400">
                                     Calcul effectué avec succès !
                                 </AlertDescription>
                             </Alert>
@@ -259,10 +306,10 @@ const URSSAFCalculator = () => {
 
                                     <TabsContent value="history">
                                         <div className="space-y-3">
-                                            {history.map((entry) => (
+                                            {history.map((entry: EntryUrssaf) => (
                                                 <div
                                                     key={entry.id}
-                                                    className="p-4 bg-white border border-gray-200 rounded-lg relative group hover:shadow-md transition-shadow"
+                                                    className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg relative group hover:shadow-md transition-shadow"
                                                 >
                                                     <Button
                                                         variant="ghost"
@@ -270,38 +317,38 @@ const URSSAFCalculator = () => {
                                                         className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
                                                         onClick={() => handleDeleteClick(entry)}
                                                     >
-                                                        <Trash2 className="h-4 w-4 text-red-500" />
+                                                        <Trash2 className="h-4 w-4 text-red-500 dark:text-red-400" />
                                                     </Button>
-                                                    <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
                                                         <Calendar className="h-4 w-4" />
                                                         <span>{entry.date.toLocaleDateString()}</span>
-                                                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
-                              T{entry.quarter}
-                            </span>
+                                                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-400 rounded-full text-xs">
+                                                            T{entry.quarter}
+                                                        </span>
                                                     </div>
                                                     <div className="grid grid-cols-2 gap-3">
                                                         <div>
-                                                            <div className="text-sm text-gray-500">Revenu</div>
-                                                            <div className="font-medium">{entry.revenue.toLocaleString()}€</div>
+                                                            <div className="text-sm text-gray-500 dark:text-gray-400">Revenu</div>
+                                                            <div className="font-medium dark:text-gray-200">{entry.revenue.toLocaleString()}€</div>
                                                         </div>
                                                         <div>
-                                                            <div className="text-sm text-gray-500">URSSAF</div>
-                                                            <div className="font-medium">{entry.urssafAmount.toLocaleString()}€</div>
+                                                            <div className="text-sm text-gray-500 dark:text-gray-400">URSSAF</div>
+                                                            <div className="font-medium dark:text-gray-200">{entry.urssafAmount.toLocaleString()}€</div>
                                                         </div>
                                                         {entry.impotAmount > 0 && (
                                                             <div>
-                                                                <div className="text-sm text-gray-500">Impôt</div>
-                                                                <div className="font-medium">{entry.impotAmount.toLocaleString()}€</div>
+                                                                <div className="text-sm text-gray-500 dark:text-gray-400">Impôt</div>
+                                                                <div className="font-medium dark:text-gray-200">{entry.impotAmount.toLocaleString()}€</div>
                                                             </div>
                                                         )}
                                                         <div>
-                                                            <div className="text-sm text-gray-500">Formation</div>
-                                                            <div className="font-medium">{entry.formationAmount.toLocaleString()}€</div>
+                                                            <div className="text-sm text-gray-500 dark:text-gray-400">Formation</div>
+                                                            <div className="font-medium dark:text-gray-200">{entry.formationAmount.toLocaleString()}€</div>
                                                         </div>
                                                     </div>
-                                                    <div className="mt-3 pt-3 border-t flex justify-between items-center">
-                                                        <span className="text-sm font-medium text-gray-600">Total</span>
-                                                        <span className="text-lg font-bold text-blue-600">{entry.totalAmount.toLocaleString()}€</span>
+                                                    <div className="mt-3 pt-3 border-t dark:border-gray-700 flex justify-between items-center">
+                                                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Total</span>
+                                                        <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{entry.totalAmount.toLocaleString()}€</span>
                                                     </div>
                                                 </div>
                                             ))}
