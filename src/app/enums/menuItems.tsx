@@ -6,7 +6,9 @@ import TextTransform from "@/app/components/features/TextTransform";
 import ReportFormatter from "@/app/components/features/ReportFormatter";
 import URSSAFCalculator from "@/app/components/features/UrssafCalculator";
 import SiretGenerator from "@/app/components/features/SiretGenerator";
-
+import Base64 from "@/app/components/features/Base64";
+import JWTDecoder from "@/app/components/features/JWTDecoder";
+import ColorConverter from "@/app/components/features/ColorConverter";
 export interface MenuItem {
     name: string;
     description: string;
@@ -46,15 +48,15 @@ export const menuItems: MenuItems = {
         icon: <Link className="w-5 h-5"/>,
         items: [
             {name: 'URL Transformer', description: 'Transform URLs', component: <UrlTransformer/>, new: true},
-            {name: 'Base64', description: 'Encode/Decode Base64'},
-            {name: 'JWT Decoder', description: 'Decode JWT tokens'},
+            {name: 'Base64', description: 'Encode/Decode Base64', component: <Base64/>, new: true},
+            {name: 'JWT Decoder', description: 'Decode JWT tokens', component: <JWTDecoder/>, new: true},
             {name: 'HTTP Tester', description: 'Test HTTP requests'}
         ]
     },
     'Frontend Tools': {
         icon: <LayoutGrid className="w-5 h-5"/>,
         items: [
-            {name: 'Color Converter', description: 'Convert between color formats'},
+            {name: 'Color Converter', description: 'Convert between color formats', component: <ColorConverter/>, new: true},
             {name: 'CSS Generator', description: 'Generate CSS snippets'},
             {name: 'SVG Optimizer', description: 'Optimize SVG files'},
             {name: 'Responsive Helper', description: 'Test responsive designs'}

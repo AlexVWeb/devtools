@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trash2, Calendar, Euro, Calculator, AlertCircle } from 'lucide-react';
+import { LocalStorageService } from '@/app/services/localStorage';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -31,25 +32,8 @@ type EntryUrssaf = {
 
 const URSSAFCalculator = () => {
     const [revenue, setRevenue] = useState('');
-    const [history, setHistory] = useState<EntryUrssaf[]>(() => {
-        if (typeof window !== 'undefined') {
-            const savedHistory = localStorage.getItem('urssafHistory');
-            if (savedHistory) {
-                return JSON.parse(savedHistory).map((entry: any) => ({
-                    ...entry,
-                    date: new Date(entry.date)
-                }));
-            }
-        }
-        return [];
-    });
-    const [includeImpot, setIncludeImpot] = useState(() => {
-        if (typeof window !== 'undefined') {
-            const savedImpot = localStorage.getItem('urssafIncludeImpot');
-            return savedImpot ? JSON.parse(savedImpot) : true;
-        }
-        return true;
-    });
+    const [history, setHistory] = useState<EntryUrssaf[]>([]);
+    const [includeImpot, setIncludeImpot] = useState(true);
     const [entryToDelete, setEntryToDelete] = useState<EntryUrssaf | null>(null);
     const [showSuccess, setShowSuccess] = useState(false);
 
@@ -57,19 +41,31 @@ const URSSAFCalculator = () => {
     const IMPOT_RATE = 0.022;
     const FORMATION_RATE = 0.002;
 
-    // Sauvegarder l'historique dans le localStorage
-    React.useEffect(() => {
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('urssafHistory', JSON.stringify(history));
+    // Charger les données sauvegardées au montage du composant
+    useEffect(() => {
+        const savedData = LocalStorageService.getData('urssaf');
+        if (savedData && savedData.history) {
+            const parsedHistory = savedData.history.map((entry: any) => ({
+                ...entry,
+                date: new Date(entry.date)
+            }));
+            setHistory(parsedHistory);
+            setIncludeImpot(savedData.includeImpot ?? true);
         }
-    }, [history]);
+    }, []);
 
-    // Sauvegarder l'option d'impôt dans le localStorage
-    React.useEffect(() => {
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('urssafIncludeImpot', JSON.stringify(includeImpot));
+    // Sauvegarder les données à chaque modification
+    useEffect(() => {
+        if (history.length > 0 || includeImpot !== true) {
+            LocalStorageService.updateData('urssaf', {
+                history: history.map(entry => ({
+                    ...entry,
+                    date: entry.date.toISOString()
+                })),
+                includeImpot
+            });
         }
-    }, [includeImpot]);
+    }, [history, includeImpot]);
 
     const getQuarter = (date: Date) => {
         const month = date.getMonth();
@@ -126,8 +122,18 @@ const URSSAFCalculator = () => {
     };
 
     const deleteEntry = (id: number) => {
-        setHistory(history.filter(entry => entry.id !== id));
+        const newHistory = history.filter(entry => entry.id !== id);
+        setHistory(newHistory);
         setEntryToDelete(null);
+        
+        // Mise à jour immédiate du localStorage
+        LocalStorageService.updateData('urssaf', {
+            history: newHistory.map(entry => ({
+                ...entry,
+                date: entry.date.toISOString()
+            })),
+            includeImpot
+        });
     };
 
     const handleDeleteClick = (entry: EntryUrssaf) => {

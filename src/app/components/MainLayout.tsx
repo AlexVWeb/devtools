@@ -11,29 +11,31 @@ import {
     Sun
 } from 'lucide-react';
 import {menuItems} from "@/app/enums/menuItems";
+import { LocalStorageService } from '@/app/services/localStorage';
 
 const MainNav = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [activeDropdown, setActiveDropdown] = useState('');
     const [selectedTool, setSelectedTool] = useState<string>('');
+    const [isDarkMode, setIsDarkMode] = useState(false);
 
     const handleToolSelect = (toolName: string) => {
         setSelectedTool(toolName);
-        localStorage.setItem('selectedTool', toolName);
+        LocalStorageService.updateData('selectedTool', toolName);
     };
-    const [isDarkMode, setIsDarkMode] = useState(false);
 
     useEffect(() => {
         // Check if user has dark mode preference
-        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        const theme = LocalStorageService.getData('theme');
+        if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             setIsDarkMode(true);
             document.documentElement.classList.add('dark');
         }
 
         // Check if user has selected a tool
-        const selectedTool = localStorage.getItem('selectedTool');
-        if (selectedTool) {
-            setSelectedTool(selectedTool);
+        const savedTool = LocalStorageService.getData('selectedTool');
+        if (savedTool) {
+            setSelectedTool(savedTool);
         }
     }, []);
 
@@ -41,10 +43,10 @@ const MainNav = () => {
         setIsDarkMode(!isDarkMode);
         if (isDarkMode) {
             document.documentElement.classList.remove('dark');
-            localStorage.theme = 'light';
+            LocalStorageService.updateData('theme', 'light');
         } else {
             document.documentElement.classList.add('dark');
-            localStorage.theme = 'dark';
+            LocalStorageService.updateData('theme', 'dark');
         }
     };
 
