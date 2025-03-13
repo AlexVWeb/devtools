@@ -6,6 +6,10 @@ import TextTransform from "@/app/components/features/TextTransform";
 import ReportFormatter from "@/app/components/features/ReportFormatter";
 import URSSAFCalculator from "@/app/components/features/UrssafCalculator";
 import SiretGenerator from "@/app/components/features/SiretGenerator";
+import Base64 from "@/app/components/features/Base64";
+import JWTDecoder from "@/app/components/features/JWTDecoder";
+import ColorConverter from "@/app/components/features/ColorConverter";
+import CronGenerator from "@/app/components/features/CronGenerator";
 
 export interface MenuItem {
     name: string;
@@ -46,15 +50,15 @@ export const menuItems: MenuItems = {
         icon: <Link className="w-5 h-5"/>,
         items: [
             {name: 'URL Transformer', description: 'Transform URLs', component: <UrlTransformer/>, new: true},
-            {name: 'Base64', description: 'Encode/Decode Base64'},
-            {name: 'JWT Decoder', description: 'Decode JWT tokens'},
+            {name: 'Base64', description: 'Encode/Decode Base64', component: <Base64/>, new: true},
+            {name: 'JWT Decoder', description: 'Decode JWT tokens', component: <JWTDecoder/>, new: true},
             {name: 'HTTP Tester', description: 'Test HTTP requests'}
         ]
     },
     'Frontend Tools': {
         icon: <LayoutGrid className="w-5 h-5"/>,
         items: [
-            {name: 'Color Converter', description: 'Convert between color formats'},
+            {name: 'Color Converter', description: 'Convert between color formats', component: <ColorConverter/>, new: true},
             {name: 'CSS Generator', description: 'Generate CSS snippets'},
             {name: 'SVG Optimizer', description: 'Optimize SVG files'},
             {name: 'Responsive Helper', description: 'Test responsive designs'}
@@ -65,7 +69,7 @@ export const menuItems: MenuItems = {
         items: [
             {name: 'SQL Formatter', description: 'Format SQL queries'},
             {name: 'API Tester', description: 'Test API endpoints'},
-            {name: 'Cron Generator', description: 'Generate cron expressions'},
+            {name: 'Cron Generator', description: 'Generate cron expressions', component: <CronGenerator/>, new: true},
             {name: 'Hash Generator', description: 'Generate secure hashes'}
         ]
     },

@@ -1,6 +1,7 @@
 'use client';
 import React, { useEffect, useState } from "react";
 import toast from 'react-hot-toast';
+import { LocalStorageService } from '@/app/services/localStorage';
 
 type TransformType = 'fix' | 'issue' | 'bug' | 'feat';
 const JiraToGit = () => {
@@ -13,12 +14,26 @@ const JiraToGit = () => {
     const [copied, setCopied] = React.useState({ commit: false, branch: false });
     const [isLoading, setIsLoading] = React.useState(false);
 
+    // Charger les données sauvegardées au montage du composant
     useEffect(() => {
-        const savedPrefix = localStorage.getItem('prefix');
-        if (savedPrefix) {
-            setPrefix(savedPrefix);
+        const savedData = LocalStorageService.getData('jiraToGit');
+        if (savedData) {
+            setPrefix(savedData.prefix);
+            setNumberTicket(savedData.numberTicket);
+            setTitle(savedData.title);
+            setType(savedData.type);
         }
     }, []);
+
+    // Sauvegarder les données à chaque modification
+    useEffect(() => {
+        LocalStorageService.updateData('jiraToGit', {
+            prefix,
+            numberTicket,
+            title,
+            type
+        });
+    }, [prefix, numberTicket, title, type]);
 
     const promptAi = {
         model: "gpt-4o",
@@ -96,9 +111,7 @@ const JiraToGit = () => {
         presence_penalty: 0
     };
 
-
     const updatePrefix = (prefix: string) => {
-        localStorage.setItem('prefix', prefix);
         setPrefix(prefix);
     }
 
