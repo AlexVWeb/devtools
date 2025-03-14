@@ -10,6 +10,7 @@ import Base64 from "@/app/components/features/Base64";
 import JWTDecoder from "@/app/components/features/JWTDecoder";
 import ColorConverter from "@/app/components/features/ColorConverter";
 import CronGenerator from "@/app/components/features/CronGenerator";
+import RegExTester from "@/app/components/features/RegExTester";
 
 export interface MenuItem {
     name: string;
@@ -43,7 +44,7 @@ export const menuItems: MenuItems = {
             {name: 'String Transformer', description: 'Transform text strings', component: <TextTransform/>, new: true},
             {name: 'JSON Formatter', description: 'Format and validate JSON'},
             {name: 'Code Generator', description: 'Generate code templates'},
-            {name: 'RegEx Tester', description: 'Test regular expressions'}
+            {name: 'RegEx Tester', description: 'Test regular expressions', component: <RegExTester/>, new: true}
         ]
     },
     'Web Tools': {
