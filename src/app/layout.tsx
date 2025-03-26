@@ -1,26 +1,26 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import React from "react";
-import { Analytics } from "@vercel/analytics/react"
+import { Inter } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
 
-const inter = Inter({subsets: ["latin"]});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
     title: "DevTools",
-    description: "Les outils du développeur",
+    description: "Collection d'outils pour les développeurs",
 };
 
 export default function RootLayout({
-                                       children,
-                                   }: Readonly<{
+    children,
+}: {
     children: React.ReactNode;
-}>) {
+}) {
     return (
-        <html lang="fr">
-        <body className={inter.className}>
-        {children}
-        <Analytics/>
+        <html lang="fr" className={inter.className}>
+        <body>
+            {children}
+            <Analytics />
         </body>
         </html>
     );

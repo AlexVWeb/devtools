@@ -11,6 +11,7 @@ import JWTDecoder from "@/app/components/features/JWTDecoder";
 import ColorConverter from "@/app/components/features/ColorConverter";
 import CronGenerator from "@/app/components/features/CronGenerator";
 import RegExTester from "@/app/components/features/RegExTester";
+import ApiTester from "@/app/components/features/ApiTester";
 
 export interface MenuItem {
     name: string;
@@ -69,7 +70,7 @@ export const menuItems: MenuItems = {
         icon: <Database className="w-5 h-5"/>,
         items: [
             {name: 'SQL Formatter', description: 'Format SQL queries'},
-            {name: 'API Tester', description: 'Test API endpoints'},
+            {name: 'API Tester', description: 'Test API endpoints', component: <ApiTester/>, new: true},
             {name: 'Cron Generator', description: 'Generate cron expressions', component: <CronGenerator/>, new: true},
             {name: 'Hash Generator', description: 'Generate secure hashes'}
         ]
