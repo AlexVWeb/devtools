@@ -10,6 +10,8 @@ import Base64 from "@/app/components/features/Base64";
 import JWTDecoder from "@/app/components/features/JWTDecoder";
 import ColorConverter from "@/app/components/features/ColorConverter";
 import CronGenerator from "@/app/components/features/CronGenerator";
+import RegExTester from "@/app/components/features/RegExTester";
+import HttpTester from "@/app/components/features/HttpTester";
 
 export interface MenuItem {
     name: string;
@@ -43,7 +45,7 @@ export const menuItems: MenuItems = {
             {name: 'String Transformer', description: 'Transform text strings', component: <TextTransform/>, new: true},
             {name: 'JSON Formatter', description: 'Format and validate JSON'},
             {name: 'Code Generator', description: 'Generate code templates'},
-            {name: 'RegEx Tester', description: 'Test regular expressions'}
+            {name: 'RegEx Tester', description: 'Test regular expressions', component: <RegExTester/>, new: true}
         ]
     },
     'Web Tools': {
@@ -52,7 +54,7 @@ export const menuItems: MenuItems = {
             {name: 'URL Transformer', description: 'Transform URLs', component: <UrlTransformer/>, new: true},
             {name: 'Base64', description: 'Encode/Decode Base64', component: <Base64/>, new: true},
             {name: 'JWT Decoder', description: 'Decode JWT tokens', component: <JWTDecoder/>, new: true},
-            {name: 'HTTP Tester', description: 'Test HTTP requests'}
+            {name: 'HTTP Tester', description: 'Test HTTP requests', component: <HttpTester/>, new: true}
         ]
     },
     'Frontend Tools': {
@@ -68,7 +70,6 @@ export const menuItems: MenuItems = {
         icon: <Database className="w-5 h-5"/>,
         items: [
             {name: 'SQL Formatter', description: 'Format SQL queries'},
-            {name: 'API Tester', description: 'Test API endpoints'},
             {name: 'Cron Generator', description: 'Generate cron expressions', component: <CronGenerator/>, new: true},
             {name: 'Hash Generator', description: 'Generate secure hashes'}
         ]
