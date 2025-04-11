@@ -4,6 +4,8 @@ import toast from 'react-hot-toast';
 import { LocalStorageService } from '@/app/services/localStorage';
 
 type TransformType = 'fix' | 'issue' | 'bug' | 'feat';
+type LanguageType = 'fr' | 'en';
+
 const JiraToGit = () => {
     const [numberTicket, setNumberTicket] = useState<string>('');
     const [title, setTitle] = useState<string>('');
@@ -11,6 +13,13 @@ const JiraToGit = () => {
     const [prefix, setPrefix] = useState<string>('');
     const [commit, setCommit] = useState<string>('');
     const [branch, setBranch] = useState<string>('');
+    const [language, setLanguage] = useState<LanguageType>(() => {
+        if (typeof window !== 'undefined') {
+            const savedData = LocalStorageService.getData('jiraToGit');
+            return (savedData?.language as LanguageType) || 'fr';
+        }
+        return 'fr';
+    });
     const [copied, setCopied] = React.useState({ commit: false, branch: false });
     const [isLoading, setIsLoading] = React.useState(false);
 
@@ -18,10 +27,10 @@ const JiraToGit = () => {
     useEffect(() => {
         const savedData = LocalStorageService.getData('jiraToGit');
         if (savedData) {
-            setPrefix(savedData.prefix);
-            setNumberTicket(savedData.numberTicket);
-            setTitle(savedData.title);
-            setType(savedData.type);
+            setPrefix(savedData.prefix || '');
+            setNumberTicket(savedData.numberTicket || '');
+            setTitle(savedData.title || '');
+            setType(savedData.type as TransformType || 'fix');
         }
     }, []);
 
@@ -31,9 +40,18 @@ const JiraToGit = () => {
             prefix,
             numberTicket,
             title,
-            type
+            type,
+            language,
+            lastUpdated: new Date().toISOString()
         });
-    }, [prefix, numberTicket, title, type]);
+    }, [prefix, numberTicket, title, type, language]);
+
+    // Ajouter un log pour déboguer
+    useEffect(() => {
+        console.log('Current language:', language);
+        const savedData = LocalStorageService.getData('jiraToGit');
+        console.log('Saved data:', savedData);
+    }, [language]);
 
     const promptAi = {
         model: "gpt-4o",
@@ -43,7 +61,7 @@ const JiraToGit = () => {
                 "content": [
                     {
                         "type": "text",
-                        "text": "You are a helpful assistant that generates commit messages and branch names in a consistent JSON format."
+                        "text": "You are a helpful assistant that generates commit messages and branch names based on the exact title provided, without adding any interpretation."
                     }
                 ]
             },
@@ -52,9 +70,14 @@ const JiraToGit = () => {
                 "content": [
                     {
                         "type": "text",
-                        "text": `Return only a JSON object with "branch" and "commit" properties using these formats:
-                        - branch: ${type}/${prefix}-${numberTicket}_{lowercase description with underscores in English}
-                        - commit: ${type}(#${prefix}-${numberTicket}): {create a short English description of the title}`
+                        "text": `Generate a JSON object with these exact values:
+                        - title: "${title}"
+                        - prefix: "${prefix}"
+                        - numberTicket: "${numberTicket}"
+                        - type: "${type}"
+                        And derive these properties:
+                        - branch: ${type}/${prefix}-${numberTicket}_${language === 'en' ? '{title translated to english}' : '{keep title in french}'}_in_lowercase_with_underscores
+                        - commit: ${type}(#${prefix}-${numberTicket}): ${language === 'en' ? '{title translated to english in lowercase}' : '{keep title in french in lowercase}'}`
                     }
                 ]
             },
@@ -117,14 +140,14 @@ const JiraToGit = () => {
 
     const fetchAi = async () => {
         try {
-            if (!process.env.REACT_APP_OPENAI_API_KEY) {
+            if (!process.env.NEXT_PUBLIC_OPENAI_API_KEY) {
                 throw new Error('OpenAI API key is missing');
             }
             const response = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${process.env.REACT_APP_OPENAI_API_KEY}`
+                    'Authorization': `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY}`
                 },
                 body: JSON.stringify(promptAi)
             });
@@ -138,20 +161,22 @@ const JiraToGit = () => {
     const generate = async () => {
         const data = await fetchAi();
         if (data && data.choices && data.choices.length > 0) {
-            const generatedText = data.choices[0].message.content;
-
-            const commitRegex = /commit:(.*?);/i;
-            const commitMatch = generatedText.match(commitRegex);
-            const commit = commitMatch ? commitMatch[1].trim() : '';
-
-            const branchRegex = /branch:(.*)/i;
-            const branchMatch = generatedText.match(branchRegex);
-            const branch = branchMatch ? branchMatch[1].trim() : '';
-
-            return {commit, branch};
+            try {
+                const content = data.choices[0].message.content;
+                const parsedContent = JSON.parse(content);
+                
+                return {
+                    commit: parsedContent.commit,
+                    branch: parsedContent.branch
+                };
+            } catch (error) {
+                console.error('Erreur lors du parsing de la réponse:', error);
+                toast.error('Erreur lors du traitement de la réponse');
+                return { commit: '', branch: '' };
+            }
         }
 
-        return {commit: '', branch: ''};
+        return { commit: '', branch: '' };
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -177,9 +202,29 @@ const JiraToGit = () => {
 
     return (
         <div className="max-w-4xl mx-auto p-6">
-            <h3 className="text-4xl font-bold mb-8 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Jira To Git
-            </h3>
+            <div className="flex justify-between items-center mb-8">
+                <h3 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    Jira To Git
+                </h3>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setLanguage('fr')}
+                        className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+                            language === 'fr' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800'
+                        }`}
+                    >
+                        🇫🇷 FR
+                    </button>
+                    <button
+                        onClick={() => setLanguage('en')}
+                        className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+                            language === 'en' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800'
+                        }`}
+                    >
+                        🇬🇧 EN
+                    </button>
+                </div>
+            </div>
 
             <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-6 shadow-lg">
                 <div className="mb-6">
