@@ -12,6 +12,7 @@ import ColorConverter from "@/app/components/features/ColorConverter";
 import CronGenerator from "@/app/components/features/CronGenerator";
 import RegExTester from "@/app/components/features/RegExTester";
 import HttpTester from "@/app/components/features/HttpTester";
+import SvgOptimizer from "@/app/components/features/SvgOptimizer";
 
 export interface MenuItem {
     name: string;
@@ -62,7 +63,7 @@ export const menuItems: MenuItems = {
         items: [
             {name: 'Color Converter', description: 'Convert between color formats', component: <ColorConverter/>, new: true},
             {name: 'CSS Generator', description: 'Generate CSS snippets'},
-            {name: 'SVG Optimizer', description: 'Optimize SVG files'},
+            {name: 'SVG Optimizer', description: 'Optimize SVG files', component: <SvgOptimizer/>, new: true},
             {name: 'Responsive Helper', description: 'Test responsive designs'}
         ]
     },

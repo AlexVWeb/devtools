@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import RegExGenerator, { GeneratedRegEx } from "./RegExGenerator";
 
 const RegExTester = () => {
@@ -48,11 +48,7 @@ const RegExTester = () => {
     };
 
     // Fonction pour tester l'expression régulière en temps réel
-    useEffect(() => {
-        testRegex();
-    }, [pattern, flags, testString]);
-
-    const testRegex = () => {
+    const testRegex = useCallback(() => {
         setError(null);
         setMatches([]);
         setHighlightedText([testString]);
@@ -92,51 +88,53 @@ const RegExTester = () => {
             }
             
             setMatches(results);
-            highlightMatches(results);
+
+            // Intégration de highlightMatches ici
+            if (results.length === 0 || !testString) {
+                setHighlightedText([testString]);
+                return;
+            }
+
+            const parts: React.ReactNode[] = [];
+            let lastIndex = 0;
+
+            // Trier les correspondances par position de début
+            const sortedMatches = [...results].sort((a, b) => a.start - b.start);
+
+            sortedMatches.forEach((match, index) => {
+                // Ajouter le texte avant la correspondance
+                if (match.start > lastIndex) {
+                    parts.push(testString.substring(lastIndex, match.start));
+                }
+
+                // Ajouter la correspondance mise en évidence
+                parts.push(
+                    <span 
+                        key={`match-${index}`} 
+                        className="bg-yellow-200 dark:bg-yellow-800 px-0.5 rounded"
+                    >
+                        {testString.substring(match.start, match.end)}
+                    </span>
+                );
+
+                lastIndex = match.end;
+            });
+
+            // Ajouter le texte restant après la dernière correspondance
+            if (lastIndex < testString.length) {
+                parts.push(testString.substring(lastIndex));
+            }
+
+            setHighlightedText(parts);
+
         } catch (err) {
             setError((err as Error).message);
         }
-    };
+    }, [pattern, flags, testString]);
 
-    // Fonction pour mettre en évidence les correspondances dans le texte
-    const highlightMatches = (matchResults: {text: string, start: number, end: number}[]) => {
-        if (matchResults.length === 0 || !testString) {
-            setHighlightedText([testString]);
-            return;
-        }
-
-        const parts: React.ReactNode[] = [];
-        let lastIndex = 0;
-
-        // Trier les correspondances par position de début
-        const sortedMatches = [...matchResults].sort((a, b) => a.start - b.start);
-
-        sortedMatches.forEach((match, index) => {
-            // Ajouter le texte avant la correspondance
-            if (match.start > lastIndex) {
-                parts.push(testString.substring(lastIndex, match.start));
-            }
-
-            // Ajouter la correspondance mise en évidence
-            parts.push(
-                <span 
-                    key={`match-${index}`} 
-                    className="bg-yellow-200 dark:bg-yellow-800 px-0.5 rounded"
-                >
-                    {testString.substring(match.start, match.end)}
-                </span>
-            );
-
-            lastIndex = match.end;
-        });
-
-        // Ajouter le texte restant après la dernière correspondance
-        if (lastIndex < testString.length) {
-            parts.push(testString.substring(lastIndex));
-        }
-
-        setHighlightedText(parts);
-    };
+    useEffect(() => {
+        testRegex();
+    }, [testRegex]);
 
     const handleCopy = async () => {
         if (matches.length > 0) {

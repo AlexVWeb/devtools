@@ -12,12 +12,27 @@ import {
 } from 'lucide-react';
 import {menuItems} from "@/app/enums/menuItems";
 import { LocalStorageService } from '@/app/services/localStorage';
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
+import {
+    Dialog,
+    DialogContent,
+    DialogTitle,
+    DialogHeader,
+} from "@/components/ui/dialog";
 
 const MainNav = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [activeDropdown, setActiveDropdown] = useState('');
     const [selectedTool, setSelectedTool] = useState<string>('');
     const [isDarkMode, setIsDarkMode] = useState(false);
+    const [open, setOpen] = useState(false);
 
     const handleToolSelect = (toolName: string) => {
         setSelectedTool(toolName);
@@ -37,6 +52,17 @@ const MainNav = () => {
         if (savedTool) {
             setSelectedTool(savedTool);
         }
+    }, []);
+
+    useEffect(() => {
+        const down = (e: KeyboardEvent) => {
+            if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                setOpen((open) => !open);
+            }
+        };
+        document.addEventListener("keydown", down);
+        return () => document.removeEventListener("keydown", down);
     }, []);
 
     const toggleTheme = () => {
@@ -68,7 +94,7 @@ const MainNav = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
             {/* Top Navigation Bar */}
             <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 fixed w-full z-30">
                 <div className="px-4 sm:px-6 lg:px-8">
@@ -87,15 +113,19 @@ const MainNav = () => {
                         {/* Search bar */}
                         <div className="flex-1 max-w-2xl mx-4">
                             <div className="relative">
-                                <input
-                                    type="text"
-                                    placeholder="Search tools..."
-                                    className="w-full px-4 py-2 pl-10 pr-4 rounded-lg border border-gray-200 dark:border-gray-600
-                           bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
-                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                           dark:focus:ring-blue-400 dark:placeholder-gray-400"
-                                />
-                                <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400 dark:text-gray-500"/>
+                                <button
+                                    onClick={() => setOpen(true)}
+                                    className="w-full flex items-center px-4 py-2 pl-10 pr-4 rounded-lg border border-gray-200 dark:border-gray-600
+                                    bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                                    dark:focus:ring-blue-400 dark:placeholder-gray-400"
+                                >
+                                    <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400 dark:text-gray-500"/>
+                                    <span className="text-left">Rechercher un outil...</span>
+                                    <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+                                        <span className="text-xs">⌘</span>K
+                                    </kbd>
+                                </button>
                             </div>
                         </div>
 
@@ -110,9 +140,11 @@ const MainNav = () => {
                                     <Moon className="h-5 w-5 text-gray-500 dark:text-gray-400"/>
                                 }
                             </button>
+                            {/* Bouton des paramètres temporairement désactivé
                             <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
                                 <Settings className="h-5 w-5 text-gray-500 dark:text-gray-400"/>
                             </button>
+                            */}
                         </div>
                     </div>
                 </div>
@@ -183,8 +215,8 @@ const MainNav = () => {
             )}
 
             {/* Main content */}
-            <main className={`transition-all duration-200 ${isSidebarOpen ? 'ml-64' : ''} pt-16`}>
-                <div className="px-4 sm:px-6 lg:px-8 py-6">
+            <main className={`flex-1 transition-all duration-200 ${isSidebarOpen ? 'ml-64' : ''} pt-16`}>
+                <div className="px-4 sm:px-6 lg:px-8 py-6 min-h-full">
                     {selectedTool ? (
                         renderTool()
                     ) : (
@@ -194,6 +226,56 @@ const MainNav = () => {
                     )}
                 </div>
             </main>
+
+            {/* Footer */}
+            <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4 mt-auto">
+                <div className="px-4 sm:px-6 lg:px-8">
+                    <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+                        Créé par{' '}
+                        <a 
+                            href="https://github.com/AlexVWeb" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                        >
+                            AlexVWeb
+                        </a>
+                    </div>
+                </div>
+            </footer>
+
+            {/* Command Dialog */}
+            <Dialog open={open} onOpenChange={setOpen}>
+                <DialogContent className="p-0">
+                    <DialogHeader>
+                        <DialogTitle className="sr-only">Recherche d&apos;outils</DialogTitle>
+                    </DialogHeader>
+                    <Command>
+                        <CommandInput placeholder="Rechercher un outil..." />
+                        <CommandList>
+                            <CommandEmpty>Aucun outil trouvé.</CommandEmpty>
+                            {Object.entries(menuItems).map(([category, {items}]) => (
+                                <CommandGroup key={category} heading={category}>
+                                    {items.map((item) => (
+                                        <CommandItem
+                                            key={item.name}
+                                            onSelect={() => {
+                                                handleToolSelect(item.name);
+                                                setOpen(false);
+                                            }}
+                                        >
+                                            <div className="flex flex-col">
+                                                <span className="font-medium">{item.name}</span>
+                                                <span className="text-xs text-muted-foreground">{item.description}</span>
+                                            </div>
+                                        </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                            ))}
+                        </CommandList>
+                    </Command>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

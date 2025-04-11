@@ -29,6 +29,8 @@ export interface LocalStorageData {
         numberTicket: string;
         title: string;
         type: string;
+        language: 'fr' | 'en';
+        lastUpdated?: string;
     };
     selectedTool?: string;
     theme?: string;
