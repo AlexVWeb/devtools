@@ -13,6 +13,7 @@ import CronGenerator from "@/app/components/features/CronGenerator";
 import RegExTester from "@/app/components/features/RegExTester";
 import HttpTester from "@/app/components/features/HttpTester";
 import SvgOptimizer from "@/app/components/features/SvgOptimizer";
+import HashGenerator from "@/app/components/features/HashGenerator";
 
 export interface MenuItem {
     name: string;
@@ -72,7 +73,7 @@ export const menuItems: MenuItems = {
         items: [
             {name: 'SQL Formatter', description: 'Format SQL queries'},
             {name: 'Cron Generator', description: 'Generate cron expressions', component: <CronGenerator/>, new: true},
-            {name: 'Hash Generator', description: 'Generate secure hashes'}
+            {name: 'Hash Generator', description: 'Generate secure hashes', component: <HashGenerator/>, new: true}
         ]
     },
     'IA Tools': {
