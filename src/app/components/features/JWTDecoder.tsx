@@ -13,7 +13,12 @@ const JWTDecoder = () => {
     const [input, setInput] = useState<string>('');
     const [decodedJWT, setDecodedJWT] = useState<DecodedJWT | null>(null);
     const [error, setError] = useState<string>('');
-    const [copied, setCopied] = useState<boolean>(false);
+    const [copiedStates, setCopiedStates] = useState({
+        input: false,
+        header: false,
+        payload: false,
+        signature: false
+    });
 
     // Charger les données sauvegardées au montage du composant
     useEffect(() => {
@@ -55,10 +60,18 @@ const JWTDecoder = () => {
         }
     };
 
-    const handleCopy = async (text: string) => {
+    const handleCopy = async (text: string, field: keyof typeof copiedStates) => {
         await navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        setCopiedStates(prev => ({
+            ...prev,
+            [field]: true
+        }));
+        setTimeout(() => {
+            setCopiedStates(prev => ({
+                ...prev,
+                [field]: false
+            }));
+        }, 2000);
     };
 
     const formatJSON = (obj: any): string => {
@@ -86,10 +99,10 @@ const JWTDecoder = () => {
                                 onChange={(e) => setInput(e.target.value)}
                             />
                             <button
-                                onClick={() => handleCopy(input)}
+                                onClick={() => handleCopy(input, 'input')}
                                 className="absolute right-2 top-2 px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-colors"
                             >
-                                {copied ? 'Copié !' : 'Copier'}
+                                {copiedStates.input ? 'Copié !' : 'Copier'}
                             </button>
                         </div>
                         <button
@@ -124,10 +137,10 @@ const JWTDecoder = () => {
                                         value={formatJSON(decodedJWT.header)}
                                     />
                                     <button
-                                        onClick={() => handleCopy(formatJSON(decodedJWT.header))}
+                                        onClick={() => handleCopy(formatJSON(decodedJWT.header), 'header')}
                                         className="absolute right-2 top-2 px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-colors"
                                     >
-                                        {copied ? 'Copié !' : 'Copier'}
+                                        {copiedStates.header ? 'Copié !' : 'Copier'}
                                     </button>
                                 </div>
                             </div>
@@ -144,10 +157,10 @@ const JWTDecoder = () => {
                                         value={formatJSON(decodedJWT.payload)}
                                     />
                                     <button
-                                        onClick={() => handleCopy(formatJSON(decodedJWT.payload))}
+                                        onClick={() => handleCopy(formatJSON(decodedJWT.payload), 'payload')}
                                         className="absolute right-2 top-2 px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-colors"
                                     >
-                                        {copied ? 'Copié !' : 'Copier'}
+                                        {copiedStates.payload ? 'Copié !' : 'Copier'}
                                     </button>
                                 </div>
                             </div>
@@ -164,10 +177,10 @@ const JWTDecoder = () => {
                                         value={decodedJWT.signature}
                                     />
                                     <button
-                                        onClick={() => handleCopy(decodedJWT.signature)}
+                                        onClick={() => handleCopy(decodedJWT.signature, 'signature')}
                                         className="absolute right-2 top-2 px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-colors"
                                     >
-                                        {copied ? 'Copié !' : 'Copier'}
+                                        {copiedStates.signature ? 'Copié !' : 'Copier'}
                                     </button>
                                 </div>
                             </div>
