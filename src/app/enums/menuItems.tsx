@@ -14,6 +14,7 @@ import RegExTester from "@/app/components/features/RegExTester";
 import HttpTester from "@/app/components/features/HttpTester";
 import SvgOptimizer from "@/app/components/features/SvgOptimizer";
 import HashGenerator from "@/app/components/features/HashGenerator";
+import JSONFormatter from "@/app/components/features/JSONFormatter";
 
 export interface MenuItem {
     name: string;
@@ -45,7 +46,7 @@ export const menuItems: MenuItems = {
         icon: <FileCode className="w-5 h-5"/>,
         items: [
             {name: 'String Transformer', description: 'Transform text strings', component: <TextTransform/>, new: true},
-            {name: 'JSON Formatter', description: 'Format and validate JSON'},
+            {name: 'JSON Formatter', description: 'Format and validate JSON', component: <JSONFormatter/>, new: true},
             {name: 'Code Generator', description: 'Generate code templates'},
             {name: 'RegEx Tester', description: 'Test regular expressions', component: <RegExTester/>, new: true}
         ]
