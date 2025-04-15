@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Calendar, Euro, Calculator, AlertCircle } from 'lucide-react';
+import { Trash2, Calendar as CalendarIcon, Euro, Calculator, AlertCircle, Edit2 } from 'lucide-react';
 import { LocalStorageService } from '@/app/services/localStorage';
 import {
     AlertDialog,
@@ -18,6 +18,10 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import dayjs from 'dayjs';
+import 'dayjs/locale/fr';
+
+dayjs.locale('fr');
 
 type EntryUrssaf = {
     id: number;
@@ -32,12 +36,15 @@ type EntryUrssaf = {
 
 const URSSAFCalculator = () => {
     const [revenue, setRevenue] = useState('');
+    const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [history, setHistory] = useState<EntryUrssaf[]>([]);
     const [includeImpot, setIncludeImpot] = useState(true);
     const [entryToDelete, setEntryToDelete] = useState<EntryUrssaf | null>(null);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [editingEntry, setEditingEntry] = useState<EntryUrssaf | null>(null);
+    const [tempDate, setTempDate] = useState<Date | null>(null);
 
-    const URSSAF_RATE = 0.231;
+    const URSSAF_RATE = 0.246;
     const IMPOT_RATE = 0.022;
     const FORMATION_RATE = 0.002;
 
@@ -106,8 +113,8 @@ const URSSAFCalculator = () => {
 
         const newEntry: EntryUrssaf = {
             id: Date.now(),
-            date: new Date(),
-            quarter: getCurrentQuarter(),
+            date: selectedDate,
+            quarter: getQuarter(selectedDate),
             revenue: revenueNum,
             urssafAmount,
             impotAmount,
@@ -117,8 +124,26 @@ const URSSAFCalculator = () => {
 
         setHistory([newEntry, ...history]);
         setRevenue('');
+        setSelectedDate(new Date());
         setShowSuccess(true);
         setTimeout(() => setShowSuccess(false), 3000);
+    };
+
+    const updateEntry = (entry: EntryUrssaf) => {
+        const updatedHistory = history.map(h => 
+            h.id === entry.id ? entry : h
+        );
+        setHistory(updatedHistory);
+        setEditingEntry(null);
+        
+        // Mise à jour du localStorage
+        LocalStorageService.updateData('urssaf', {
+            history: updatedHistory.map(entry => ({
+                ...entry,
+                date: entry.date.toISOString()
+            })),
+            includeImpot
+        });
     };
 
     const deleteEntry = (id: number) => {
@@ -161,7 +186,7 @@ const URSSAFCalculator = () => {
                 <CardContent className="pt-4">
                     <div className="space-y-3">
                         <div className="flex items-center gap-2 text-lg font-semibold text-blue-700 dark:text-blue-400">
-                            <Calendar className="h-5 w-5" />
+                            <CalendarIcon className="h-5 w-5" />
                             <span>Trimestre {quarter}</span>
                         </div>
                         <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
@@ -170,7 +195,7 @@ const URSSAFCalculator = () => {
                                 <div className="text-lg font-medium dark:text-gray-200">{summary.totalRevenue.toLocaleString()}€</div>
                             </div>
                             <div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400">URSSAF (23.1%)</div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400">URSSAF (24.6%)</div>
                                 <div className="text-lg font-medium dark:text-gray-200">{summary.totalUrssaf.toLocaleString()}€</div>
                             </div>
                             {summary.totalImpot > 0 && (
@@ -202,6 +227,58 @@ const URSSAFCalculator = () => {
     const nextDeadline = getNextDeadline();
     const daysUntilDeadline = Math.ceil((nextDeadline.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
 
+    const handleEditDate = (entry: EntryUrssaf, newDate: Date) => {
+        setTempDate(newDate);
+    };
+
+    const validateDateChange = () => {
+        if (editingEntry && tempDate) {
+            const updatedEntry = {
+                ...editingEntry,
+                date: tempDate,
+                quarter: getQuarter(tempDate)
+            };
+            updateEntry(updatedEntry);
+            setTempDate(null);
+        }
+    };
+
+    const cancelDateChange = () => {
+        setTempDate(null);
+        setEditingEntry(null);
+    };
+
+    const recalculateHistory = () => {
+        const updatedHistory = history.map(entry => {
+            const urssafAmount = entry.revenue * URSSAF_RATE;
+            const impotAmount = includeImpot ? entry.revenue * IMPOT_RATE : 0;
+            const formationAmount = entry.revenue * FORMATION_RATE;
+            const totalAmount = urssafAmount + impotAmount + formationAmount;
+
+            return {
+                ...entry,
+                urssafAmount,
+                impotAmount,
+                formationAmount,
+                totalAmount
+            };
+        });
+
+        setHistory(updatedHistory);
+        
+        // Mise à jour du localStorage
+        LocalStorageService.updateData('urssaf', {
+            history: updatedHistory.map(entry => ({
+                ...entry,
+                date: entry.date.toISOString()
+            })),
+            includeImpot
+        });
+
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+    };
+
     return (
         <div className="max-w-xl mx-auto p-4">
             <AlertDialog open={!!entryToDelete} onOpenChange={() => setEntryToDelete(null)}>
@@ -227,9 +304,21 @@ const URSSAFCalculator = () => {
 
             <Card className="border-none shadow-lg dark:bg-gray-800">
                 <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
-                    <div className="flex items-center gap-2">
-                        <Calculator className="h-6 w-6" />
-                        <CardTitle>Calculateur URSSAF</CardTitle>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Calculator className="h-6 w-6" />
+                            <CardTitle>Calculateur URSSAF</CardTitle>
+                        </div>
+                        {history.length > 0 && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={recalculateHistory}
+                                className="bg-white/10 hover:bg-white/20"
+                            >
+                                Recalculer l&apos;historique
+                            </Button>
+                        )}
                     </div>
                 </CardHeader>
                 <CardContent className="pt-6">
@@ -256,6 +345,25 @@ const URSSAFCalculator = () => {
                             <Label htmlFor="impot" className="text-sm font-medium dark:text-gray-200">
                                 {"Inclure le versement libératoire d'impôt (2.2%)"}
                             </Label>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="date" className="text-sm font-medium dark:text-gray-200">
+                                Date du paiement
+                            </Label>
+                            <div className="relative">
+                                <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
+                                <Input
+                                    type="date"
+                                    id="date"
+                                    value={dayjs(selectedDate).format('YYYY-MM-DD')}
+                                    onChange={(e) => {
+                                        const date = e.target.value ? new Date(e.target.value) : new Date();
+                                        setSelectedDate(date);
+                                    }}
+                                    className="pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
+                                />
+                            </div>
                         </div>
 
                         <div className="space-y-2">
@@ -317,45 +425,116 @@ const URSSAFCalculator = () => {
                                                     key={entry.id}
                                                     className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg relative group hover:shadow-md transition-shadow"
                                                 >
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                        onClick={() => handleDeleteClick(entry)}
-                                                    >
-                                                        <Trash2 className="h-4 w-4 text-red-500 dark:text-red-400" />
-                                                    </Button>
-                                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
-                                                        <Calendar className="h-4 w-4" />
-                                                        <span>{entry.date.toLocaleDateString()}</span>
-                                                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-400 rounded-full text-xs">
-                                                            T{entry.quarter}
-                                                        </span>
+                                                    <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => setEditingEntry(entry)}
+                                                        >
+                                                            <Edit2 className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => handleDeleteClick(entry)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4 text-red-500 dark:text-red-400" />
+                                                        </Button>
                                                     </div>
-                                                    <div className="grid grid-cols-2 gap-3">
-                                                        <div>
-                                                            <div className="text-sm text-gray-500 dark:text-gray-400">Revenu</div>
-                                                            <div className="font-medium dark:text-gray-200">{entry.revenue.toLocaleString()}€</div>
-                                                        </div>
-                                                        <div>
-                                                            <div className="text-sm text-gray-500 dark:text-gray-400">URSSAF</div>
-                                                            <div className="font-medium dark:text-gray-200">{entry.urssafAmount.toLocaleString()}€</div>
-                                                        </div>
-                                                        {entry.impotAmount > 0 && (
-                                                            <div>
-                                                                <div className="text-sm text-gray-500 dark:text-gray-400">Impôt</div>
-                                                                <div className="font-medium dark:text-gray-200">{entry.impotAmount.toLocaleString()}€</div>
+                                                    {editingEntry?.id === entry.id ? (
+                                                        <div className="space-y-4">
+                                                            <div className="space-y-2">
+                                                                <Label>Date</Label>
+                                                                <div className="relative">
+                                                                    <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
+                                                                    <Input
+                                                                        type="date"
+                                                                        value={tempDate ? dayjs(tempDate).format('YYYY-MM-DD') : dayjs(entry.date).format('YYYY-MM-DD')}
+                                                                        onChange={(e) => {
+                                                                            if (e.target.value) {
+                                                                                handleEditDate(entry, new Date(e.target.value));
+                                                                            }
+                                                                        }}
+                                                                        className="pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
+                                                                    />
+                                                                </div>
+                                                                <div className="flex justify-end gap-2 mt-2">
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        onClick={cancelDateChange}
+                                                                    >
+                                                                        Annuler
+                                                                    </Button>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        onClick={validateDateChange}
+                                                                        disabled={!tempDate}
+                                                                    >
+                                                                        Valider
+                                                                    </Button>
+                                                                </div>
                                                             </div>
-                                                        )}
-                                                        <div>
-                                                            <div className="text-sm text-gray-500 dark:text-gray-400">Formation</div>
-                                                            <div className="font-medium dark:text-gray-200">{entry.formationAmount.toLocaleString()}€</div>
+                                                            <div className="grid grid-cols-2 gap-3">
+                                                                <div>
+                                                                    <div className="text-sm text-gray-500 dark:text-gray-400">Revenu</div>
+                                                                    <div className="font-medium dark:text-gray-200">{entry.revenue.toLocaleString()}€</div>
+                                                                </div>
+                                                                <div>
+                                                                    <div className="text-sm text-gray-500 dark:text-gray-400">URSSAF (24.6%)</div>
+                                                                    <div className="font-medium dark:text-gray-200">{entry.urssafAmount.toLocaleString()}€</div>
+                                                                </div>
+                                                                {entry.impotAmount > 0 && (
+                                                                    <div>
+                                                                        <div className="text-sm text-gray-500 dark:text-gray-400">Impôt (2.2%)</div>
+                                                                        <div className="font-medium dark:text-gray-200">{entry.impotAmount.toLocaleString()}€</div>
+                                                                    </div>
+                                                                )}
+                                                                <div>
+                                                                    <div className="text-sm text-gray-500 dark:text-gray-400">Formation (0.2%)</div>
+                                                                    <div className="font-medium dark:text-gray-200">{entry.formationAmount.toLocaleString()}€</div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="mt-3 pt-3 border-t dark:border-gray-700 flex justify-between items-center">
+                                                                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Total</span>
+                                                                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{entry.totalAmount.toLocaleString()}€</span>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <div className="mt-3 pt-3 border-t dark:border-gray-700 flex justify-between items-center">
-                                                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Total</span>
-                                                        <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{entry.totalAmount.toLocaleString()}€</span>
-                                                    </div>
+                                                    ) : (
+                                                        <>
+                                                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                                                <CalendarIcon className="h-4 w-4" />
+                                                                <span>{dayjs(entry.date).format('D MMMM YYYY')}</span>
+                                                                <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-400 rounded-full text-xs">
+                                                                    T{entry.quarter}
+                                                                </span>
+                                                            </div>
+                                                            <div className="grid grid-cols-2 gap-3">
+                                                                <div>
+                                                                    <div className="text-sm text-gray-500 dark:text-gray-400">Revenu</div>
+                                                                    <div className="font-medium dark:text-gray-200">{entry.revenue.toLocaleString()}€</div>
+                                                                </div>
+                                                                <div>
+                                                                    <div className="text-sm text-gray-500 dark:text-gray-400">URSSAF (24.6%)</div>
+                                                                    <div className="font-medium dark:text-gray-200">{entry.urssafAmount.toLocaleString()}€</div>
+                                                                </div>
+                                                                {entry.impotAmount > 0 && (
+                                                                    <div>
+                                                                        <div className="text-sm text-gray-500 dark:text-gray-400">Impôt (2.2%)</div>
+                                                                        <div className="font-medium dark:text-gray-200">{entry.impotAmount.toLocaleString()}€</div>
+                                                                    </div>
+                                                                )}
+                                                                <div>
+                                                                    <div className="text-sm text-gray-500 dark:text-gray-400">Formation (0.2%)</div>
+                                                                    <div className="font-medium dark:text-gray-200">{entry.formationAmount.toLocaleString()}€</div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="mt-3 pt-3 border-t dark:border-gray-700 flex justify-between items-center">
+                                                                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Total</span>
+                                                                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{entry.totalAmount.toLocaleString()}€</span>
+                                                            </div>
+                                                        </>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>
